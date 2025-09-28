@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TamirAdam - Usta ve Müşteri Buluşma Noktası</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        .form-section {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #f97316;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(249, 115, 22, 0.4);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #6366f1;
+            padding: 12px 24px;
+            border: 2px solid #6366f1;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            background: #6366f1;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .tab-button {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-button.active {
+            color: #f97316;
+            border-bottom-color: #f97316;
+        }
+        
+        .success-message, .error-message {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        /* Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .animate-slide-in {
+            animation: slideInUp 0.6s ease-out;
+        }
+        
+        .animate-slide-in-delay {
+            animation: slideInUp 0.6s ease-out 0.3s both;
+        }
+        
+        .animate-slide-left {
+            animation: slideInLeft 0.6s ease-out;
+        }
+        
+        .floating-text {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            animation: slideInUp 0.6s ease-out;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+        
+        .feature-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .feature-card:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        .stat-item {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .stat-item:nth-child(2) { animation-delay: 0.5s; }
+        .stat-item:nth-child(3) { animation-delay: 1s; }
+        .stat-item:nth-child(4) { animation-delay: 1.5s; }
+        
+        .counter {
+            transition: all 0.3s ease;
+        }
+        
+        .page-section {
+            display: none;
+            animation: slideInUp 0.6s ease-out;
+        }
+        
+        .page-section.active {
+            display: block;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(249, 115, 22, 0.3);
+            box-shadow: 0 4px 20px rgba(249, 115, 22, 0.3);
+            position: relative;
+            overflow: visible;
+            z-index: 1500;
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .nav-link {
+            color: white;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+            opacity: 0.9;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            opacity: 1;
+            transform: translateY(-2px);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Mobile Menu Styles */
+        .mobile-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            border: 1px solid rgba(249, 115, 22, 0.1);
+            min-width: 280px;
+            z-index: 2000;
+            overflow: hidden;
+            transform: translateY(-10px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 8px;
+            max-height: 400px;
+        }
+        
+        .mobile-menu-dropdown.show {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+        
+            .mobile-menu-item {
+                display: block;
+                width: 100%;
+                padding: 18px 24px;
+                color: #374151;
+                font-weight: 500;
+                text-align: left;
+                border: none;
+                background: transparent;
+                transition: all 0.3s ease;
+                cursor: pointer;
+                border-bottom: 1px solid #f3f4f6;
+                min-height: 56px;
+                display: flex;
+                align-items: center;
+                font-size: 16px;
+            }
+        
+        .mobile-menu-item:last-child {
+            border-bottom: none;
+        }
+        
+        .mobile-menu-item:hover {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .mobile-menu-item.login-btn {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            font-weight: 600;
+            margin: 8px;
+            border-radius: 12px;
+            border: none;
+        }
+        
+        .mobile-menu-item.login-btn:hover {
+            transform: translateX(0) scale(1.02);
+            box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+        }
+        
+        .mobile-menu-item.logout-btn {
+            background: #ef4444;
+            color: white;
+            font-weight: 600;
+            margin: 8px;
+            border-radius: 12px;
+            border: none;
+        }
+        
+        .mobile-menu-item.logout-btn:hover {
+            background: #dc2626;
+            transform: translateX(0) scale(1.02);
+        }
+        
+        /* WhatsApp Float Button */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            animation: slideInUp 0.8s ease-out 2s both;
+        }
+        
+        .whatsapp-link {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            font-size: 14px;
+            max-width: 60px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .whatsapp-link:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(37, 211, 102, 0.6);
+            max-width: 200px;
+            padding: 12px 20px;
+        }
+        
+        .whatsapp-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            margin-right: 0;
+            transition: margin-right 0.3s ease;
+        }
+        
+        .whatsapp-link:hover .whatsapp-icon {
+            margin-right: 8px;
+        }
+        
+        .whatsapp-text {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .whatsapp-link:hover .whatsapp-text {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .whatsapp-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .whatsapp-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.8);
+        }
+        
+        .whatsapp-float:hover .whatsapp-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-5px);
+        }
+        
+        /* WhatsApp button pulse animation */
+        @keyframes whatsappPulse {
+            0% {
+                box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 25px rgba(37, 211, 102, 0.6), 0 0 0 10px rgba(37, 211, 102, 0.1);
+            }
+            100% {
+                box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+            }
+        }
+        
+        .whatsapp-link {
+            animation: whatsappPulse 2s infinite;
+        }
+        
+        .whatsapp-link:hover {
+            animation: none;
+        }
+
+        /* Premium Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes floatReverse {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(20px); }
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(249, 115, 22, 0.6), 0 0 60px rgba(249, 115, 22, 0.3); }
+        }
+        
+        /* Floating Background Elements */
+        .floating-element {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .floating-element:nth-child(2n) {
+            animation: floatReverse 8s ease-in-out infinite;
+        }
+        
+        .floating-element:nth-child(3n) {
+            animation: rotate 20s linear infinite;
+        }
+        
+        /* Premium Gradient Background */
+        .premium-gradient {
+            background: linear-gradient(-45deg, #f97316, #ea580c, #dc2626, #b91c1c);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+        }
+        
+        /* Shimmer Effect */
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        /* Premium Button Effects */
+        .btn-premium {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-premium::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-premium:hover::before {
+            left: 100%;
+        }
+        
+        .btn-premium:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(249, 115, 22, 0.4);
+            animation: glow 2s infinite;
+        }
+        
+        /* Premium Cards */
+        .premium-card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .premium-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+        
+        .premium-card:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .premium-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+        
+        /* Particle Effects */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(249, 115, 22, 0.6);
+            border-radius: 50%;
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        .particle:nth-child(odd) {
+            animation-delay: -2s;
+            animation-duration: 6s;
+        }
+        
+        /* Premium Text Effects */
+        .premium-text {
+            background: linear-gradient(45deg, #f97316, #ea580c, #dc2626);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        /* Premium Loading Animation */
+        .premium-loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(249, 115, 22, 0.3);
+            border-top: 3px solid #f97316;
+            border-radius: 50%;
+            animation: rotate 1s linear infinite;
+        }
+        
+        /* Premium Hover Effects */
+        .premium-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .premium-hover:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+
+        /* Mobile Responsive Design */
+        @media (max-width: 768px) {
+            * {
+                box-sizing: border-box;
+            }
+            
+            html, body {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+                font-size: 14px;
+            }
+            
+            /* Improved touch targets */
+            button, .btn-primary, .btn-secondary, .nav-link, .tab-button, 
+            .mobile-menu-item, .feature-card {
+                min-height: 48px !important;
+                min-width: 48px !important;
+                touch-action: manipulation !important;
+                -webkit-tap-highlight-color: transparent !important;
+            }
+            
+            /* Better spacing for mobile */
+            .container, .max-w-7xl, .max-w-4xl, .max-w-md {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+            
+            .navbar {
+                padding: 0.5rem 1rem !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 1000 !important;
+            }
+            
+            .mobile-menu-toggle {
+                background: rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(10px);
+                color: white;
+                padding: 12px 16px;
+                border-radius: 12px;
+                font-weight: 600;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-height: 48px;
+                font-size: 14px;
+            }
+            
+            .mobile-menu-toggle:hover {
+                background: rgba(255, 255, 255, 0.3);
+                transform: scale(1.05);
+            }
+            
+            .hamburger {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            
+            .hamburger span {
+                width: 20px;
+                height: 2px;
+                background: white;
+                border-radius: 1px;
+                transition: all 0.3s ease;
+            }
+            
+            .mobile-menu-toggle.active .hamburger span:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+            }
+            
+            .mobile-menu-toggle.active .hamburger span:nth-child(2) {
+                opacity: 0;
+            }
+            
+            .mobile-menu-toggle.active .hamburger span:nth-child(3) {
+                transform: rotate(-45deg) translate(7px, -6px);
+            }
+            
+            .pt-12 {
+                padding-top: 50px !important;
+            }
+            
+            .max-w-7xl, .max-w-4xl, .max-w-md {
+                max-width: 100% !important;
+                margin-left: 1rem !important;
+                margin-right: 1rem !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            
+            .px-6 {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            /* Mobile specific spacing adjustments */
+            #homePage .py-12 {
+                padding-top: 2rem !important;
+                padding-bottom: 2rem !important;
+            }
+            
+            #homePage .mb-16 {
+                margin-bottom: 2rem !important;
+            }
+            
+            #homePage .mb-20 {
+                margin-bottom: 2.5rem !important;
+            }
+            
+            #homePage .mb-12 {
+                margin-bottom: 1.5rem !important;
+            }
+            
+            #homePage .mt-20 {
+                margin-top: 2rem !important;
+            }
+            
+            .text-6xl {
+                font-size: 2.25rem !important;
+                line-height: 1.1 !important;
+                margin-bottom: 1rem !important;
+                margin-top: 1.5rem !important;
+            }
+            
+            .text-5xl {
+                font-size: 1.5rem !important;
+                line-height: 1.1 !important;
+            }
+            
+            .text-4xl {
+                font-size: 1.375rem !important;
+                line-height: 1.2 !important;
+            }
+            
+            .text-3xl {
+                font-size: 1.25rem !important;
+                line-height: 1.2 !important;
+            }
+            
+            .text-2xl {
+                font-size: 1.125rem !important;
+                line-height: 1.3 !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .text-xl {
+                font-size: 1rem !important;
+                line-height: 1.3 !important;
+            }
+            
+            /* Grid adjustments for mobile */
+            .grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+            
+            /* Service categories - 2 columns on mobile */
+            #homePage .grid-cols-2 {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.75rem !important;
+            }
+            
+            /* Features and reviews - single column */
+            #homePage .grid-cols-1.md\\:grid-cols-3 {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+            
+            /* How it works - 2x2 grid on mobile */
+            #homePage .grid-cols-1.md\\:grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 1rem !important;
+            }
+            
+            .feature-card {
+                padding: 1.25rem !important;
+                margin-bottom: 1rem !important;
+                border-radius: 16px !important;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+                transition: all 0.3s ease !important;
+                background: white !important;
+                border: 1px solid rgba(0,0,0,0.05) !important;
+            }
+            
+            .feature-card:active {
+                transform: scale(0.98) !important;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.12) !important;
+            }
+            
+            .feature-card:hover {
+                transform: translateY(-2px) !important;
+                box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+            }
+            
+            /* Service category cards - smaller on mobile */
+            #homePage .grid-cols-2 .feature-card {
+                padding: 0.75rem !important;
+            }
+            
+            #homePage .grid-cols-2 .feature-card .w-16 {
+                width: 2.5rem !important;
+                height: 2.5rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            #homePage .grid-cols-2 .feature-card .w-8 {
+                width: 1.25rem !important;
+                height: 1.25rem !important;
+            }
+            
+            #homePage .grid-cols-2 .feature-card h4 {
+                font-size: 0.875rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+            
+            #homePage .grid-cols-2 .feature-card p {
+                font-size: 0.75rem !important;
+            }
+            
+            /* Features section - compact */
+            #homePage .w-20 {
+                width: 3rem !important;
+                height: 3rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            #homePage .w-10 {
+                width: 1.5rem !important;
+                height: 1.5rem !important;
+            }
+            
+            /* Reviews section - compact */
+            #homePage .w-12 {
+                width: 2.5rem !important;
+                height: 2.5rem !important;
+            }
+            
+            /* How it works - compact */
+            #homePage .w-20.h-20.bg-gradient-to-r {
+                width: 3rem !important;
+                height: 3rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            /* Stats section - compact */
+            .stat-item .text-5xl {
+                font-size: 2rem !important;
+            }
+            
+            .stat-item .text-xl {
+                font-size: 0.875rem !important;
+            }
+            
+            .form-section {
+                padding: 1.5rem !important;
+                margin: 0 !important;
+            }
+            
+            .form-input {
+                padding: 16px 20px !important;
+                font-size: 16px !important;
+                border-radius: 12px !important;
+                border: 2px solid #e5e7eb !important;
+                background: #fafafa !important;
+                transition: all 0.3s ease !important;
+            }
+            
+            .form-input:focus {
+                border-color: #f97316 !important;
+                background: white !important;
+                box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
+                outline: none !important;
+            }
+            
+            .btn-primary, .btn-secondary {
+                padding: 16px 24px !important;
+                font-size: 16px !important;
+                min-height: 52px !important;
+                border-radius: 12px !important;
+                font-weight: 600 !important;
+                transition: all 0.3s ease !important;
+            }
+            
+            .btn-primary {
+                background: linear-gradient(135deg, #f97316, #ea580c) !important;
+                color: white !important;
+                border: none !important;
+            }
+            
+            .btn-primary:active {
+                transform: scale(0.98) !important;
+            }
+            
+            .tab-button {
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                flex: 1;
+                text-align: center;
+            }
+            
+            input[type="text"], 
+            input[type="email"], 
+            input[type="tel"], 
+            input[type="password"], 
+            textarea, 
+            select {
+                font-size: 16px !important;
+                -webkit-appearance: none;
+            }
+            
+            textarea {
+                min-height: 100px !important;
+                resize: vertical;
+            }
+            
+            button, .btn-primary, .btn-secondary, .nav-link, .tab-button {
+                touch-action: manipulation !important;
+                -webkit-tap-highlight-color: transparent !important;
+                min-height: 44px !important;
+            }
+            
+            /* WhatsApp button mobile adjustments */
+            .whatsapp-float {
+                bottom: 20px !important;
+                left: 20px !important;
+            }
+            
+            .whatsapp-link {
+                padding: 12px 18px !important;
+                font-size: 14px !important;
+                min-height: 48px !important;
+                border-radius: 50px !important;
+            }
+            
+            .whatsapp-icon {
+                width: 22px !important;
+                height: 22px !important;
+            }
+            
+            .whatsapp-tooltip {
+                font-size: 12px !important;
+                padding: 8px 12px !important;
+            }
+            
+            /* Improved scrolling */
+            .page-section {
+                scroll-behavior: smooth !important;
+            }
+            
+            /* Better text readability */
+            p, span, div {
+                line-height: 1.6 !important;
+            }
+            
+            /* Improved focus states for accessibility */
+            button:focus, .btn-primary:focus, .btn-secondary:focus,
+            .form-input:focus, .mobile-menu-item:focus {
+                outline: 2px solid #f97316 !important;
+                outline-offset: 2px !important;
+            }
+            
+            /* Better spacing for content */
+            .mb-8, .mb-12, .mb-16, .mb-20 {
+                margin-bottom: 1.5rem !important;
+            }
+            
+            .mt-8, .mt-12, .mt-16, .mt-20 {
+                margin-top: 1.5rem !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 min-h-screen relative overflow-hidden">
+    <!-- Navigation -->
+    <nav class="navbar fixed top-0 left-0 right-0 z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center justify-between py-2">
+                <div class="flex items-center">
+                    <svg width="40" height="40" viewBox="0 0 375 375" class="text-white">
+                        <path fill="currentColor" d="M 265.789062 203.71875 C 265.15625 201.074219 263.710938 197.726562 262.21875 195.46875 C 262.054688 195.226562 256.316406 175.21875 255.53125 171.386719 C 254.195312 164.863281 250.695312 159.792969 245.386719 155.875 C 244.421875 155.164062 243.359375 154.785156 242.183594 154.628906 C 232.964844 153.421875 214.929688 146.785156 214.496094 146.898438 C 217.097656 153.332031 219.628906 159.699219 221.523438 166.351562 C 218.53125 163.3125 214.816406 161.847656 210.808594 160.945312 C 208.976562 160.53125 207.136719 160.144531 205.320312 159.660156 C 203.558594 159.191406 203.214844 158.65625 203.292969 156.808594 C 203.359375 155.300781 205.125 151.375 205.195312 150.441406 C 204.695312 151.105469 204.34375 151.59375 203.976562 152.058594 C 201.285156 155.449219 198.890625 159.070312 195.730469 162.070312 C 193.03125 164.640625 190.328125 167.210938 187.710938 169.863281 C 183.648438 173.980469 180.285156 176.128906 178.5 184.386719 C 178.792969 181.839844 179.15625 179.398438 179.871094 177.015625 C 180.085938 176.296875 180.5 175.75 181.042969 175.246094 C 188.539062 168.226562 195.878906 161.066406 201.859375 152.652344 C 203.332031 150.578125 205.011719 148.667969 206.957031 146.730469 C 206.90625 147.09375 206.894531 147.246094 206.859375 147.394531 C 206.191406 150.195312 205.488281 152.992188 204.859375 155.800781 C 204.339844 158.105469 204.824219 158.871094 207.066406 159.480469 C 207.722656 159.660156 208.386719 159.804688 209.054688 159.921875 C 212.175781 160.460938 215.285156 161.039062 218.109375 162.582031 C 218.570312 162.832031 219.027344 163.09375 219.636719 163.433594 C 217.941406 158.1875 216.398438 153.136719 214.410156 148.238281 C 214.121094 147.535156 213.902344 146.773438 213.3125 146.261719 C 212.042969 145.15625 211.191406 143.78125 210.472656 142.285156 C 209.570312 140.410156 207.972656 139.355469 205.992188 139.003906 C 204.996094 138.828125 204.664062 138.339844 204.5 137.472656 C 203.859375 134.128906 203.910156 130.78125 204.410156 127.425781 C 204.566406 126.367188 204.613281 125.28125 205.199219 124.3125 C 206.089844 122.839844 206.960938 121.355469 207.789062 119.847656 C 208.757812 118.085938 209.628906 116.273438 209.929688 114.265625 C 210.15625 112.753906 210.199219 111.230469 209.578125 109.773438 C 209.136719 108.734375 208.183594 108.570312 207.230469 108.347656 C 206.699219 108.226562 207.964844 106.421875 207.964844 106.011719 C 207.957031 103.765625 207.757812 101.527344 207.386719 99.3125 C 206.34375 93.058594 204.445312 87.109375 201.15625 81.640625 C 199.027344 78.101562 195.976562 75.960938 191.894531 75.222656 C 188.777344 74.65625 185.625 74.425781 182.492188 73.992188 C 179.882812 73.636719 177.292969 73.769531 174.726562 74.316406 C 173.746094 74.523438 162.460938 76.988281 160.242188 83.363281 C 159.320312 86.015625 158.207031 88.589844 157.402344 91.273438 C 157.203125 91.941406 156.902344 92.355469 156.28125 92.691406 C 153.6875 94.09375 151.707031 96.039062 150.960938 99.023438 C 150.113281 102.433594 151.246094 104.835938 154.425781 106.265625 C 154.9375 106.496094 155.449219 106.746094 155.988281 106.890625 C 156.960938 107.152344 157.535156 107.714844 157.835938 108.707031 C 158.214844 109.945312 158.832031 111.117188 159.992188 111.789062 C 160.640625 112.164062 160.753906 112.617188 160.722656 113.261719 C 160.511719 117.664062 161.511719 121.839844 163.09375 125.914062 C 163.46875 126.882812 163.839844 127.863281 164.097656 128.867188 C 165.214844 133.199219 166.804688 137.332031 169.183594 141.132812 C 169.574219 141.753906 169.414062 142.074219 168.933594 142.53125 C 167.566406 143.824219 166.265625 145.1875 164.917969 146.507812 C 164.007812 147.402344 163.46875 148.464844 163.144531 149.710938 C 161.960938 154.242188 160.660156 158.738281 158.78125 163.046875 C 158.554688 163.570312 158.328125 164.097656 157.996094 164.851562 C 163.1875 163.484375 168.132812 162.25 172.835938 160.210938 C 170.453125 162.117188 159.480469 165.933594 155.453125 166.300781 C 156.992188 163.804688 158.199219 161.199219 159.339844 158.558594 C 160.691406 155.433594 161.851562 152.238281 162.703125 148.9375 C 162.769531 148.679688 163.15625 148.054688 162.480469 148.203125 C 158.507812 149.066406 155.707031 151.820312 151.925781 153.316406 C 146.761719 155.359375 141.613281 154.949219 136.246094 155.640625 C 130.65625 156.363281 126.652344 159.492188 123.34375 163.84375 C 118.640625 170.039062 115.324219 177.042969 111.507812 183.757812 C 111.15625 184.378906 105.191406 194.496094 104.625 198.675781 C 104.15625 202.140625 104.667969 205.476562 105.785156 208.726562 C 106.90625 211.996094 107.589844 215.273438 107.683594 218.777344 C 107.839844 224.582031 109.054688 230.335938 112.578125 235.035156 C 115.152344 238.46875 119.640625 236.058594 121.652344 236.101562 C 156.558594 236.863281 191.695312 226.019531 191.695312 226.019531 C 191.695312 226.019531 222.859375 238.152344 239.042969 238.449219 C 246.714844 238.589844 252.414062 238.132812 256.148438 231.761719 C 256.347656 231.429688 256.648438 231.136719 256.949219 230.882812 C 259.433594 228.773438 261.042969 226.105469 261.425781 222.890625 C 261.667969 220.832031 262.253906 219.027344 263.488281 217.394531 C 263.75 217.046875 263.9375 216.636719 264.148438 216.25 C 265.914062 212.96875 266.65625 207.335938 265.785156 203.707031 Z"/>
+                    </svg>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button class="nav-link active" onclick="showPage('home')">Ana Sayfa</button>
+                    <button class="nav-link" onclick="showPage('services')">Hizmet Talebi</button>
+                    <button class="nav-link" onclick="showPage('about')">Hakkımızda</button>
+                    <button class="nav-link" onclick="showPage('contact')">İletişim</button>
+                    <button id="loginBtn" class="nav-link bg-gradient-to-r from-orange-500 to-red-500 text-white" onclick="showPage('login')">Giriş Yap</button>
+                    <button id="logoutBtn" class="nav-link bg-red-500 text-white" onclick="logout()" style="display: none;">Çıkış Yap</button>
+                </div>
+            </div>
+            
+            <!-- Mobile Navigation -->
+            <div class="md:hidden flex items-center justify-between py-1">
+                <div class="flex items-center">
+                    <svg width="32" height="32" viewBox="0 0 375 375" class="text-white">
+                        <path fill="currentColor" d="M 265.789062 203.71875 C 265.15625 201.074219 263.710938 197.726562 262.21875 195.46875 C 262.054688 195.226562 256.316406 175.21875 255.53125 171.386719 C 254.195312 164.863281 250.695312 159.792969 245.386719 155.875 C 244.421875 155.164062 243.359375 154.785156 242.183594 154.628906 C 232.964844 153.421875 214.929688 146.785156 214.496094 146.898438 C 217.097656 153.332031 219.628906 159.699219 221.523438 166.351562 C 218.53125 163.3125 214.816406 161.847656 210.808594 160.945312 C 208.976562 160.53125 207.136719 160.144531 205.320312 159.660156 C 203.558594 159.191406 203.214844 158.65625 203.292969 156.808594 C 203.359375 155.300781 205.125 151.375 205.195312 150.441406 C 204.695312 151.105469 204.34375 151.59375 203.976562 152.058594 C 201.285156 155.449219 198.890625 159.070312 195.730469 162.070312 C 193.03125 164.640625 190.328125 167.210938 187.710938 169.863281 C 183.648438 173.980469 180.285156 176.128906 178.5 184.386719 C 178.792969 181.839844 179.15625 179.398438 179.871094 177.015625 C 180.085938 176.296875 180.5 175.75 181.042969 175.246094 C 188.539062 168.226562 195.878906 161.066406 201.859375 152.652344 C 203.332031 150.578125 205.011719 148.667969 206.957031 146.730469 C 206.90625 147.09375 206.894531 147.246094 206.859375 147.394531 C 206.191406 150.195312 205.488281 152.992188 204.859375 155.800781 C 204.339844 158.105469 204.824219 158.871094 207.066406 159.480469 C 207.722656 159.660156 208.386719 159.804688 209.054688 159.921875 C 212.175781 160.460938 215.285156 161.039062 218.109375 162.582031 C 218.570312 162.832031 219.027344 163.09375 219.636719 163.433594 C 217.941406 158.1875 216.398438 153.136719 214.410156 148.238281 C 214.121094 147.535156 213.902344 146.773438 213.3125 146.261719 C 212.042969 145.15625 211.191406 143.78125 210.472656 142.285156 C 209.570312 140.410156 207.972656 139.355469 205.992188 139.003906 C 204.996094 138.828125 204.664062 138.339844 204.5 137.472656 C 203.859375 134.128906 203.910156 130.78125 204.410156 127.425781 C 204.566406 126.367188 204.613281 125.28125 205.199219 124.3125 C 206.089844 122.839844 206.960938 121.355469 207.789062 119.847656 C 208.757812 118.085938 209.628906 116.273438 209.929688 114.265625 C 210.15625 112.753906 210.199219 111.230469 209.578125 109.773438 C 209.136719 108.734375 208.183594 108.570312 207.230469 108.347656 C 206.699219 108.226562 207.964844 106.421875 207.964844 106.011719 C 207.957031 103.765625 207.757812 101.527344 207.386719 99.3125 C 206.34375 93.058594 204.445312 87.109375 201.15625 81.640625 C 199.027344 78.101562 195.976562 75.960938 191.894531 75.222656 C 188.777344 74.65625 185.625 74.425781 182.492188 73.992188 C 179.882812 73.636719 177.292969 73.769531 174.726562 74.316406 C 173.746094 74.523438 162.460938 76.988281 160.242188 83.363281 C 159.320312 86.015625 158.207031 88.589844 157.402344 91.273438 C 157.203125 91.941406 156.902344 92.355469 156.28125 92.691406 C 153.6875 94.09375 151.707031 96.039062 150.960938 99.023438 C 150.113281 102.433594 151.246094 104.835938 154.425781 106.265625 C 154.9375 106.496094 155.449219 106.746094 155.988281 106.890625 C 156.960938 107.152344 157.535156 107.714844 157.835938 108.707031 C 158.214844 109.945312 158.832031 111.117188 159.992188 111.789062 C 160.640625 112.164062 160.753906 112.617188 160.722656 113.261719 C 160.511719 117.664062 161.511719 121.839844 163.09375 125.914062 C 163.46875 126.882812 163.839844 127.863281 164.097656 128.867188 C 165.214844 133.199219 166.804688 137.332031 169.183594 141.132812 C 169.574219 141.753906 169.414062 142.074219 168.933594 142.53125 C 167.566406 143.824219 166.265625 145.1875 164.917969 146.507812 C 164.007812 147.402344 163.46875 148.464844 163.144531 149.710938 C 161.960938 154.242188 160.660156 158.738281 158.78125 163.046875 C 158.554688 163.570312 158.328125 164.097656 157.996094 164.851562 C 163.1875 163.484375 168.132812 162.25 172.835938 160.210938 C 170.453125 162.117188 159.480469 165.933594 155.453125 166.300781 C 156.992188 163.804688 158.199219 161.199219 159.339844 158.558594 C 160.691406 155.433594 161.851562 152.238281 162.703125 148.9375 C 162.769531 148.679688 163.15625 148.054688 162.480469 148.203125 C 158.507812 149.066406 155.707031 151.820312 151.925781 153.316406 C 146.761719 155.359375 141.613281 154.949219 136.246094 155.640625 C 130.65625 156.363281 126.652344 159.492188 123.34375 163.84375 C 118.640625 170.039062 115.324219 177.042969 111.507812 183.757812 C 111.15625 184.378906 105.191406 194.496094 104.625 198.675781 C 104.15625 202.140625 104.667969 205.476562 105.785156 208.726562 C 106.90625 211.996094 107.589844 215.273438 107.683594 218.777344 C 107.839844 224.582031 109.054688 230.335938 112.578125 235.035156 C 115.152344 238.46875 119.640625 236.058594 121.652344 236.101562 C 156.558594 236.863281 191.695312 226.019531 191.695312 226.019531 C 191.695312 226.019531 222.859375 238.152344 239.042969 238.449219 C 246.714844 238.589844 252.414062 238.132812 256.148438 231.761719 C 256.347656 231.429688 256.648438 231.136719 256.949219 230.882812 C 259.433594 228.773438 261.042969 226.105469 261.425781 222.890625 C 261.667969 220.832031 262.253906 219.027344 263.488281 217.394531 C 263.75 217.046875 263.9375 216.636719 264.148438 216.25 C 265.914062 212.96875 266.65625 207.335938 265.785156 203.707031 Z"/>
+                    </svg>
+                </div>
+                
+                <div class="relative" style="z-index: 2100;">
+                    <button id="mobileMenuToggle" class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                        <span class="text-sm font-semibold">MENÜ</span>
+                        <div class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    
+                    <!-- Mobile Menu Dropdown -->
+                    <div id="mobileMenuDropdown" class="mobile-menu-dropdown">
+                        <button class="mobile-menu-item" onclick="showPage('home'); closeMobileMenu()">
+                            Ana Sayfa
+                        </button>
+                        <button class="mobile-menu-item" onclick="showPage('services'); closeMobileMenu()">
+                            Hizmet Talebi
+                        </button>
+                        <button class="mobile-menu-item" onclick="showPage('about'); closeMobileMenu()">
+                            Hakkımızda
+                        </button>
+                        <button class="mobile-menu-item" onclick="showPage('contact'); closeMobileMenu()">
+                            İletişim
+                        </button>
+                        <button id="mobileLoginBtn" class="mobile-menu-item login-btn" onclick="showPage('login'); closeMobileMenu()">
+                            Giriş Yap
+                        </button>
+                        <button id="mobileLogoutBtn" class="mobile-menu-item logout-btn" onclick="logout(); closeMobileMenu()" style="display: none;">
+                            Çıkış Yap
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- Main Content -->
+    <div class="pt-12">
+        <!-- Messages -->
+        <div id="successMessage" class="success-message max-w-4xl mx-auto px-6"></div>
+        <div id="errorMessage" class="error-message max-w-4xl mx-auto px-6"></div>
+
+        <!-- Home Page -->
+        <div id="homePage" class="page-section active">
+            <div class="max-w-7xl mx-auto px-6 py-12">
+                <!-- Hero Section -->
+                <div class="text-center mb-16">
+                    <div class="floating-text">
+                        <h2 class="text-6xl font-bold premium-text mb-6">TamirAdam'a Hoşgeldiniz!</h2>
+                        <p class="text-2xl text-gray-600 mb-8">Usta ve müşteri buluşma noktası</p>
+                        
+                        <div class="flex justify-center">
+                            <button onclick="showPage('services')" class="btn-primary btn-premium max-w-md text-xl py-4 px-8 mt-4 transform hover:scale-105 transition-all duration-300">
+                                <span class="shimmer">Hizmet Talebi Başvurusu</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Section -->
+                <div class="mb-20 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-3xl p-12 text-white">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+                        <div class="stat-item">
+                            <div class="text-5xl font-bold counter" data-target="1250">0</div>
+                            <div class="text-xl opacity-90 mt-2">Mutlu Müşteri</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="text-5xl font-bold counter" data-target="450">0</div>
+                            <div class="text-xl opacity-90 mt-2">Kayıtlı Usta</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="text-5xl font-bold counter" data-target="2800">0</div>
+                            <div class="text-xl opacity-90 mt-2">Tamamlanan İş</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="text-5xl font-bold counter" data-target="98">0</div>
+                            <div class="text-xl opacity-90 mt-2">% Memnuniyet</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Categories -->
+                <div class="mb-20">
+                    <h3 class="text-4xl font-bold text-center text-gray-800 mb-12">Popüler Hizmetler</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div class="feature-card premium-card text-center cursor-pointer hover:bg-orange-50 transition-all duration-300" onclick="selectServiceAndNavigate('elektrik')">
+                            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-bold text-gray-800">Elektrik</h4>
+                            <p class="text-sm text-gray-600 mt-2">Elektrik tesisatı, anahtar, priz</p>
+                        </div>
+                        <div class="feature-card premium-card text-center cursor-pointer hover:bg-orange-50 transition-all duration-300" onclick="selectServiceAndNavigate('tesisat')">
+                            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-bold text-gray-800">Tesisat</h4>
+                            <p class="text-sm text-gray-600 mt-2">Su tesisatı, kaçak tamiri</p>
+                        </div>
+                        <div class="feature-card premium-card text-center cursor-pointer hover:bg-orange-50 transition-all duration-300" onclick="selectServiceAndNavigate('boyama')">
+                            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-bold text-gray-800">Boyama</h4>
+                            <p class="text-sm text-gray-600 mt-2">Duvar boyası, dekorasyon</p>
+                        </div>
+                        <div class="feature-card text-center cursor-pointer hover:bg-orange-50 transition-all duration-300" onclick="selectServiceAndNavigate('marangozluk')">
+                            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-bold text-gray-800">Marangozluk</h4>
+                            <p class="text-sm text-gray-600 mt-2">Mobilya, dolap, kapı</p>
+                        </div>
+                        <div class="feature-card text-center cursor-pointer hover:bg-orange-50 transition-all duration-300" onclick="selectServiceAndNavigate('tadilat')">
+                            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-bold text-gray-800">Tadilat</h4>
+                            <p class="text-sm text-gray-600 mt-2">Ev yenileme, renovasyon</p>
+                        </div>
+                        <div class="feature-card text-center cursor-pointer hover:bg-orange-50 transition-all duration-300" onclick="selectServiceAndNavigate('klima')">
+                            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6.59,0.66C8.93-1.15 11.47,1.06 12.04,4.5C12.47,4.5 12.89,4.62 13.27,4.84C13.79,4.24 14.25,3.42 14.07,2.5C13.65,0.35 16.06-1.39 18.35,1.58C20.16,3.92 17.95,6.46 14.5,7.03C14.5,7.46 14.38,7.88 14.16,8.26C14.76,8.78 15.58,9.24 16.5,9.06C18.63,8.64 20.38,11.04 17.41,13.34C15.07,15.15 12.53,12.94 11.96,9.5C11.53,9.5 11.11,9.38 10.73,9.16C10.21,9.76 9.75,10.58 9.93,11.5C10.35,13.65 7.94,15.39 5.65,12.42C3.84,10.07 6.05,7.53 9.5,6.97C9.5,6.54 9.62,6.12 9.84,5.74C9.24,5.22 8.42,4.76 7.5,4.94C5.37,5.36 3.62,2.96 6.59,0.66M5,16H7A2,2 0 0,1 9,18V24H7V22H5V24H3V18A2,2 0 0,1 5,16M5,18V20H7V18H5M12.93,16H15L12.07,24H10L12.93,16M18,16A3,3 0 0,1 21,19V21A3,3 0 0,1 18,24A3,3 0 0,1 15,21V19A3,3 0 0,1 18,16M18,18A1,1 0 0,0 17,19V21A1,1 0 0,0 18,22A1,1 0 0,0 19,21V19A1,1 0 0,0 18,18Z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-bold text-gray-800">Klima</h4>
+                            <p class="text-sm text-gray-600 mt-2">Montaj, bakım, onarım</p>
+                        </div>
+                        <div class="feature-card text-center cursor-pointer hover:bg-orange-50 transition-all duration-300" onclick="selectServiceAndNavigate('temizlik')">
+                            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-bold text-gray-800">Temizlik</h4>
+                            <p class="text-sm text-gray-600 mt-2">Ev, ofis, inşaat sonrası</p>
+                        </div>
+                        <div class="feature-card text-center cursor-pointer hover:bg-orange-50 transition-all duration-300" onclick="selectServiceAndNavigate('diger')">
+                            <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M2,20H22V18H2M3.15,12.95L4,12.47L4.85,12.95L4.85,11.38L6.3,10.48L4.85,9.58L4.85,8L4,8.47L3.15,8L3.15,9.58L1.7,10.48L3.15,11.38M6.7,13.8L7.55,13.32L8.4,13.8L8.4,12.23L9.85,11.33L8.4,10.43L8.4,8.85L7.55,9.32L6.7,8.85L6.7,10.43L5.25,11.33L6.7,12.23M22,16H2V14H22M14.27,13H12V7H14.27C14.5,7 14.72,7 14.95,7.05C15.18,7.1 15.39,7.18 15.58,7.3C15.77,7.42 15.93,7.58 16.05,7.77C16.17,7.96 16.23,8.18 16.23,8.41C16.23,8.61 16.18,8.8 16.1,8.97C16,9.14 15.87,9.29 15.72,9.4C15.94,9.5 16.1,9.68 16.21,9.9C16.32,10.12 16.37,10.35 16.37,10.59C16.37,10.86 16.31,11.11 16.18,11.33C16.05,11.55 15.89,11.73 15.69,11.86C15.5,12 15.28,12.08 15.05,12.13C14.82,12.18 14.55,12.21 14.27,13M14.76,10.13C14.76,9.92 14.67,9.78 14.5,9.71C14.33,9.64 14.11,9.61 13.84,9.61H13.57V10.71H13.87C14.17,10.71 14.4,10.67 14.56,10.58C14.72,10.5 14.76,10.35 14.76,10.13M14.65,8.55C14.65,8.39 14.58,8.28 14.44,8.2C14.3,8.12 14.13,8.08 13.93,8.08H13.57V9.01H13.86C14.1,9.01 14.28,8.97 14.4,8.88C14.52,8.79 14.65,8.69 14.65,8.55Z"/>
+                                </svg>
+                            </div>
+                            <h4 class="font-bold text-gray-800">Diğer</h4>
+                            <p class="text-sm text-gray-600 mt-2">Özel hizmetler</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features Section -->
+                <div class="mb-20">
+                    <h3 class="text-4xl font-bold text-center text-gray-800 mb-12">Neden TamirAdam?</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="feature-card">
+                            <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.5C15.4,11.5 16,12.4 16,13V16C16,16.6 15.6,17 15,17H9C8.4,17 8,16.6 8,16V13C8,12.4 8.4,11.5 9,11.5V10C9,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.2,8.7 10.2,10V11.5H13.8V10C13.8,8.7 12.8,8.2 12,8.2Z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-4 text-gray-800 text-center">Güvenilir Ustalar</h3>
+                            <p class="text-gray-600 text-lg text-center">Deneyimli ve güvenilir ustalarla tanışın. Her işin uzmanı burada!</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-4 text-gray-800 text-center">Hızlı Çözüm</h3>
+                            <p class="text-gray-600 text-lg text-center">İhtiyacınıza hızlı ve etkili çözümler. Acil durumlar için 7/24 hizmet!</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
+                                <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-4 text-gray-800 text-center">%100 Memnuniyet</h3>
+                            <p class="text-gray-600 text-lg text-center">Müşteri memnuniyeti garantisi. İşiniz bitene kadar yanınızdayız!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Reviews -->
+                <div class="mb-20">
+                    <h3 class="text-4xl font-bold text-center text-gray-800 mb-12">Müşteri Yorumları</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="feature-card">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white font-bold text-lg">A</div>
+                                <div class="ml-4">
+                                    <h4 class="font-bold text-gray-800">Ahmet Yılmaz</h4>
+                                    <div class="flex text-yellow-400">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-gray-600">"Elektrik problemim çok hızlı çözüldü. Usta çok deneyimli ve güvenilirdi. Kesinlikle tavsiye ederim!"</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white font-bold text-lg">M</div>
+                                <div class="ml-4">
+                                    <h4 class="font-bold text-gray-800">Merve Kaya</h4>
+                                    <div class="flex text-yellow-400">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-gray-600">"Evimin boyası harika oldu! Usta çok titiz çalıştı ve sonuç beklediğimden de güzel çıktı."</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white font-bold text-lg">C</div>
+                                <div class="ml-4">
+                                    <h4 class="font-bold text-gray-800">Can Özkan</h4>
+                                    <div class="flex text-yellow-400">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-gray-600">"Su kaçağı sorunu acil olarak çözüldü. Gece yarısı bile hizmet aldım. Çok memnunum!"</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How It Works -->
+                <div class="mb-20">
+                    <h3 class="text-4xl font-bold text-center text-gray-800 mb-12">Nasıl Çalışır?</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                        <div class="text-center">
+                            <div class="w-20 h-20 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">1</div>
+                            <h4 class="font-bold text-gray-800 mb-2">Talep Oluştur</h4>
+                            <p class="text-gray-600">İhtiyacınızı belirtin ve hizmet talebinizi gönderin</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-20 h-20 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">2</div>
+                            <h4 class="font-bold text-gray-800 mb-2">Usta Eşleştirme</h4>
+                            <p class="text-gray-600">Size en uygun ustaları bulup iletişime geçiriyoruz</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-20 h-20 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">3</div>
+                            <h4 class="font-bold text-gray-800 mb-2">Fiyat Görüşmesi</h4>
+                            <p class="text-gray-600">Usta ile direkt görüşerek fiyat ve detayları belirleyin</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-20 h-20 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">4</div>
+                            <h4 class="font-bold text-gray-800 mb-2">İş Tamamlandı</h4>
+                            <p class="text-gray-600">İşiniz profesyonelce tamamlanır ve memnuniyetiniz sağlanır</p>
+                        </div>
+                    </div>
+                </div>
+
+
+
+            </div>
+        </div>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="page-section">
+            <div class="max-w-md mx-auto px-6 py-12">
+                <div class="form-section">
+                    <div class="flex justify-center border-b border-gray-200 mb-8">
+                        <button class="tab-button active" onclick="showTab('login')">Giriş Yap</button>
+                        <button class="tab-button" onclick="showTab('register')">Kayıt Ol</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div id="loginTab" class="tab-content">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Hesabınıza Giriş Yapın</h2>
+                        
+                        <form id="loginForm" class="space-y-6">
+                            <div>
+                                <label class="form-label" for="loginEmail">E-posta Adresi</label>
+                                <input type="email" id="loginEmail" class="form-input" placeholder="ornek@email.com" required>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label" for="loginPassword">Şifre</label>
+                                <input type="password" id="loginPassword" class="form-input" placeholder="Şifrenizi girin" required>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary mt-8">
+                                Giriş Yap
+                            </button>
+                        </form>
+                        
+                        <div class="text-center mt-6">
+                            <p class="text-gray-600">Hesabınız yok mu? 
+                                <button class="text-orange-600 font-semibold hover:text-orange-700" onclick="showTab('register')">Kayıt olun</button>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Register Form -->
+                    <div id="registerTab" class="tab-content" style="display: none;">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Yeni Hesap Oluşturun</h2>
+                        
+                        <form id="registerForm" class="space-y-6">
+                            <div>
+                                <label class="form-label" for="regName">Ad Soyad</label>
+                                <input type="text" id="regName" class="form-input" placeholder="Adınız ve soyadınız" required>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label" for="regEmail">E-posta Adresi</label>
+                                <input type="email" id="regEmail" class="form-input" placeholder="ornek@email.com" required>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label" for="regPassword">Şifre</label>
+                                <input type="password" id="regPassword" class="form-input" placeholder="En az 6 karakter" required minlength="6">
+                            </div>
+                            
+                            <div>
+                                <label class="form-label" for="regPasswordConfirm">Şifre Tekrar</label>
+                                <input type="password" id="regPasswordConfirm" class="form-input" placeholder="Şifrenizi tekrar girin" required>
+                            </div>
+                            
+                            <div class="flex items-start space-x-2 mt-4">
+                                <input type="checkbox" id="terms" class="mt-1" required>
+                                <label for="terms" class="text-sm text-gray-600">
+                                    <span class="text-orange-600 hover:text-orange-700 cursor-pointer">Kullanım şartlarını</span> ve 
+                                    <span class="text-orange-600 hover:text-orange-700 cursor-pointer">gizlilik politikasını</span> kabul ediyorum.
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary mt-8">
+                                Hesap Oluştur
+                            </button>
+                        </form>
+                        
+                        <div class="text-center mt-6">
+                            <p class="text-gray-600">Zaten hesabınız var mı? 
+                                <button class="text-orange-600 font-semibold hover:text-orange-700" onclick="showTab('login')">Giriş yapın</button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Page -->
+        <div id="servicesPage" class="page-section">
+            <div class="max-w-7xl mx-auto px-6 py-12">
+                <div class="text-center mb-16">
+                    <h2 class="text-5xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-6">Hizmet Talebi</h2>
+                    <p class="text-xl text-gray-600">İhtiyacınız olan usta hizmetini talep edin, size en uygun ustayı bulalım</p>
+                </div>
+
+                <!-- Service Categories Dropdown -->
+                <div class="max-w-md mx-auto mb-16">
+                    <div class="form-section">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">Hizmet Türü Seçin</h3>
+                        <div class="relative">
+                            <select id="quickServiceSelect" class="form-input text-center" onchange="selectServiceFromDropdown(this.value)">
+                                <option value="">Hizmet türünü seçin...</option>
+                                <option value="elektrik">Elektrik İşleri</option>
+                                <option value="tesisat">Tesisat İşleri</option>
+                                <option value="boyama">Boyama İşleri</option>
+                                <option value="marangozluk">Marangozluk</option>
+                                <option value="tadilat">Tadilat</option>
+                                <option value="klima">Klima Servisi</option>
+                                <option value="temizlik">Temizlik</option>
+                                <option value="diger">Diğer</option>
+                            </select>
+                        </div>
+                        <p class="text-sm text-gray-500 text-center mt-3">Hizmet türünü seçtikten sonra aşağıdaki forma otomatik olarak yönlendirileceksiniz</p>
+                    </div>
+                </div>
+
+                <!-- Service Request Form -->
+                <div class="form-section animate-slide-in">
+                    <h3 class="text-3xl font-bold text-gray-800 mb-8 text-center">Hizmet Talep Formu</h3>
+                    <form id="serviceRequestForm" action="https://formspree.io/f/xyzdonqr" method="POST" class="space-y-6">
+                        <input type="hidden" name="form_type" value="service_request">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="form-label">Ad Soyad</label>
+                                <input type="text" name="customer_name" class="form-input" placeholder="Adınız ve soyadınız" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Telefon</label>
+                                <input type="tel" name="customer_phone" class="form-input" placeholder="0555 123 45 67" required>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="form-label">Hizmet Türü</label>
+                                <select id="serviceTypeSelect" name="service_type" class="form-input" required>
+                                    <option value="">Seçiniz...</option>
+                                    <option value="elektrik">Elektrik İşleri</option>
+                                    <option value="tesisat">Tesisat İşleri</option>
+                                    <option value="boyama">Boyama İşleri</option>
+                                    <option value="marangozluk">Marangozluk</option>
+                                    <option value="tadilat">Tadilat</option>
+                                    <option value="klima">Klima Servisi</option>
+                                    <option value="temizlik">Temizlik</option>
+                                    <option value="diger">Diğer</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label">Aciliyet</label>
+                                <select name="urgency" class="form-input" required>
+                                    <option value="">Seçiniz...</option>
+                                    <option value="acil">Acil (Bugün)</option>
+                                    <option value="hizli">Hızlı (2-3 gün)</option>
+                                    <option value="normal">Normal (1 hafta)</option>
+                                    <option value="esnek">Esnek</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">İş Detayları</label>
+                            <textarea name="job_details" class="form-input" rows="3" placeholder="Yapılacak işi kısaca açıklayın..." required></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">Adres</label>
+                            <input type="text" name="address" class="form-input" placeholder="İş yapılacak adres" required>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">
+                            Hizmet Talebi Gönder
+                        </button>
+                    </form>
+                </div>
+
+
+            </div>
+        </div>
+
+        <!-- About Page -->
+        <div id="aboutPage" class="page-section">
+            <div class="max-w-7xl mx-auto px-6 py-12">
+                <div class="text-center mb-16">
+                    <h2 class="text-5xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-6">Hakkımızda</h2>
+                    <p class="text-xl text-gray-600">TamirAdam'ın hikayesi ve vizyonu</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
+                    <div class="animate-slide-left">
+                        <h3 class="text-4xl font-bold text-gray-800 mb-6">Misyonumuz</h3>
+                        <p class="text-lg text-gray-600 mb-6">
+                            TamirAdam olarak, kaliteli hizmet arayan müşteriler ile deneyimli ustaları bir araya getiriyoruz. 
+                            Amacımız, güvenilir ve profesyonel bir platform sunarak, her iki tarafın da memnuniyetini sağlamaktır.
+                        </p>
+                        <p class="text-lg text-gray-600">
+                            2020 yılından bu yana binlerce başarılı iş eşleştirmesi gerçekleştirdik ve müşteri memnuniyetinde 
+                            %98 oranına ulaştık.
+                        </p>
+                    </div>
+                    <div class="text-center">
+                        <h4 class="text-2xl font-bold text-gray-800">Güvenilir Platform</h4>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                    <div class="feature-card text-center">
+                        <h4 class="text-xl font-bold mb-3">Deneyimli Ekip</h4>
+                        <p class="text-gray-600">5+ yıl deneyimli teknoloji ve müşteri hizmetleri ekibimiz</p>
+                    </div>
+                    <div class="feature-card text-center">
+                        <h4 class="text-xl font-bold mb-3">Güvenlik</h4>
+                        <p class="text-gray-600">Tüm ustalarımız kimlik ve referans kontrolünden geçer</p>
+                    </div>
+                    <div class="feature-card text-center">
+                        <h4 class="text-xl font-bold mb-3">7/24 Destek</h4>
+                        <p class="text-gray-600">Her zaman yanınızdayız, sorunlarınızı çözmeye hazırız</p>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl p-12 text-white text-center">
+                    <h3 class="text-4xl font-bold mb-6">Vizyonumuz</h3>
+                    <p class="text-xl opacity-90 max-w-4xl mx-auto">
+                        Türkiye'nin en güvenilir usta-müşteri buluşma platformu olmak ve her evde, 
+                        her işyerinde kaliteli hizmetin ulaşılabilir olmasını sağlamak.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Page -->
+        <div id="contactPage" class="page-section">
+            <div class="max-w-7xl mx-auto px-6 py-12">
+                <div class="text-center mb-16">
+                    <h2 class="text-5xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-6">İletişim</h2>
+                    <p class="text-xl text-gray-600">Bizimle iletişime geçin, size yardımcı olmaktan mutluluk duyarız</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                    <div class="space-y-8">
+                        <div class="feature-card">
+                            <div>
+                                <h4 class="text-xl font-bold text-gray-800 mb-2">Telefon</h4>
+                                <a href="tel:05536366983" class="text-orange-600 hover:text-orange-700 font-semibold text-lg">05536366983</a>
+                                <p class="text-sm text-gray-500 mt-1">Pazartesi - Cuma: 09:00 - 18:00</p>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div>
+                                <h4 class="text-xl font-bold text-gray-800 mb-2">E-posta</h4>
+                                <p class="text-gray-600">tamiradam@outlook.com</p>
+                                <p class="text-sm text-gray-500">24 saat içinde yanıt veriyoruz</p>
+                            </div>
+                        </div>
+
+                        <div class="feature-card">
+                            <div>
+                                <h4 class="text-xl font-bold text-gray-800 mb-2">Adres</h4>
+                                <p class="text-gray-600">Nilüfer Merkez</p>
+                                <p class="text-gray-600">Bursa/Nilüfer</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-6">Bize Mesaj Gönderin</h3>
+                        <form action="https://formspree.io/f/xyzdonqr" method="POST" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="form-label">Ad Soyad</label>
+                                    <input type="text" name="contact_name" class="form-input" placeholder="Adınız ve soyadınız" required>
+                                </div>
+                                <div>
+                                    <label class="form-label">E-posta</label>
+                                    <input type="email" name="contact_email" class="form-input" placeholder="ornek@email.com" required>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label">Konu</label>
+                                <input type="text" name="subject" class="form-input" placeholder="Mesajınızın konusu" required>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label">Mesajınız</label>
+                                <textarea name="message" class="form-input" rows="5" placeholder="Mesajınızı buraya yazın..." required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary">
+                                Mesaj Gönder
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Canlı Yardım Butonu -->
+    <div id="whatsappButton" class="whatsapp-float">
+        <a href="https://api.whatsapp.com/send?phone=905536366983&text=Merhaba%2C%20TamirAdam%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." target="_blank" rel="noopener noreferrer" class="whatsapp-link">
+            <svg class="whatsapp-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+            </svg>
+            <span class="whatsapp-text">Canlı Yardım</span>
+        </a>
+        <div class="whatsapp-tooltip">
+            WhatsApp ile bize ulaşın!
+        </div>
+    </div>
+
+    <script>
+        // Supabase Configuration
+        const supabaseUrl = 'https://cdlujtsoxheuwlyxxima.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkbHVqdHNveGhldXdseXh4aW1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzE5NzEsImV4cCI6MjA1MDU0Nzk3MX0.sb_publishable_0P3IiyVAQ9PEaHhxK9Jqzw_22FMS-W5';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        let isLoggedIn = false;
+
+        // Mobile Menu Functions
+        function toggleMobileMenu() {
+            const dropdown = document.getElementById('mobileMenuDropdown');
+            const toggle = document.getElementById('mobileMenuToggle');
+            
+            if (dropdown.classList.contains('show')) {
+                closeMobileMenu();
+            } else {
+                dropdown.classList.add('show');
+                toggle.classList.add('active');
+            }
+        }
+        
+        function closeMobileMenu() {
+            const dropdown = document.getElementById('mobileMenuDropdown');
+            const toggle = document.getElementById('mobileMenuToggle');
+            
+            dropdown.classList.remove('show');
+            toggle.classList.remove('active');
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('mobileMenuDropdown');
+            const toggle = document.getElementById('mobileMenuToggle');
+            
+            if (!dropdown.contains(event.target) && !toggle.contains(event.target)) {
+                closeMobileMenu();
+            }
+        });
+        
+        // Page Management
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageName + 'Page').classList.add('active');
+            
+            // Clear messages
+            hideMessages();
+        }
+
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').style.display = 'block';
+            event.target.classList.add('active');
+            
+            // Clear messages
+            hideMessages();
+        }
+
+        // Message Functions
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // Update UI for logged in state
+        function updateUIForLoggedIn(user) {
+            isLoggedIn = true;
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'block';
+            document.getElementById('mobileLoginBtn').style.display = 'none';
+            document.getElementById('mobileLogoutBtn').style.display = 'block';
+        }
+
+        // Update UI for logged out state
+        function updateUIForLoggedOut() {
+            isLoggedIn = false;
+            document.getElementById('loginBtn').style.display = 'block';
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('mobileLoginBtn').style.display = 'block';
+            document.getElementById('mobileLogoutBtn').style.display = 'none';
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await supabaseClient.auth.signOut();
+                showSuccess('Başarıyla çıkış yaptınız!');
+                showPage('home');
+                updateUIForLoggedOut();
+            } catch (error) {
+                showError('Çıkış yaparken bir hata oluştu.');
+            }
+        }
+
+        // Register Form
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+            
+            // Password validation
+            if (password !== passwordConfirm) {
+                showError('Şifreler eşleşmiyor!');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('Şifre en az 6 karakter olmalıdır!');
+                return;
+            }
+            
+            // Show loading
+            const form = e.target;
+            form.classList.add('loading');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: name
+                        }
+                    }
+                });
+                
+                if (error) {
+                    showError('Kayıt hatası: ' + error.message);
+                } else {
+                    showSuccess('Kayıt başarılı! E-posta adresinize onay maili gönderildi.');
+                    form.reset();
+                    setTimeout(() => showTab('login'), 3000);
+                }
+            } catch (error) {
+                showError('Bir hata oluştu. Lütfen tekrar deneyin.');
+            } finally {
+                form.classList.remove('loading');
+            }
+        });
+
+        // Login Form
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Show loading
+            const form = e.target;
+            form.classList.add('loading');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    showError('Giriş hatası: ' + error.message);
+                } else {
+                    showSuccess('Giriş başarılı! Hoşgeldiniz!');
+                    form.reset();
+                    
+                    // Redirect to home page after successful login
+                    setTimeout(() => {
+                        showPage('home');
+                    }, 1500);
+                }
+            } catch (error) {
+                showError('Bir hata oluştu. Lütfen tekrar deneyin.');
+            } finally {
+                form.classList.remove('loading');
+            }
+        });
+
+        // Check if user is already logged in
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                console.log('Kullanıcı giriş yaptı:', session.user.email);
+                updateUIForLoggedIn(session.user);
+            } else if (event === 'SIGNED_OUT') {
+                console.log('Kullanıcı çıkış yaptı');
+                updateUIForLoggedOut();
+            }
+        });
+
+        // Counter Animation
+        function animateCounters() {
+            const counters = document.querySelectorAll('.counter');
+            counters.forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-target'));
+                const increment = target / 100;
+                let current = 0;
+                
+                const updateCounter = () => {
+                    if (current < target) {
+                        current += increment;
+                        counter.textContent = Math.ceil(current);
+                        setTimeout(updateCounter, 20);
+                    } else {
+                        counter.textContent = target;
+                    }
+                };
+                
+                updateCounter();
+            });
+        }
+
+        // Start counter animation when page loads
+        window.addEventListener('load', () => {
+            setTimeout(animateCounters, 2000);
+            initPremiumEffects();
+        });
+        
+        // Premium Effects
+        function initPremiumEffects() {
+            // Add premium hover effects to all cards
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'translateY(-8px) scale(1.02)';
+                    card.style.boxShadow = '0 25px 50px rgba(0,0,0,0.15)';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(0) scale(1)';
+                    card.style.boxShadow = '0 8px 30px rgba(0,0,0,0.1)';
+                });
+            });
+            
+            // Add premium button effects
+            const premiumButtons = document.querySelectorAll('.btn-premium');
+            premiumButtons.forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    button.style.animation = 'glow 2s infinite';
+                });
+                
+                button.addEventListener('mouseleave', () => {
+                    button.style.animation = 'none';
+                });
+            });
+            
+        }
+
+        // Service selection function
+        function selectService(serviceType) {
+            const serviceSelect = document.getElementById('serviceTypeSelect');
+            serviceSelect.value = serviceType;
+            
+            // Scroll to form
+            document.getElementById('serviceRequestForm').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+            
+            // Highlight the form briefly
+            const formSection = document.querySelector('#servicesPage .form-section:last-child');
+            formSection.style.transform = 'scale(1.02)';
+            formSection.style.boxShadow = '0 20px 60px rgba(249, 115, 22, 0.3)';
+            
+            setTimeout(() => {
+                formSection.style.transform = 'scale(1)';
+                formSection.style.boxShadow = '0 10px 40px rgba(0,0,0,0.1)';
+            }, 1000);
+        }
+
+        // Dropdown service selection function
+        function selectServiceFromDropdown(serviceType) {
+            if (serviceType) {
+                const serviceSelect = document.getElementById('serviceTypeSelect');
+                serviceSelect.value = serviceType;
+                
+                // Scroll to form
+                document.getElementById('serviceRequestForm').scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Highlight the form briefly
+                const formSection = document.querySelector('#servicesPage .form-section:last-child');
+                formSection.style.transform = 'scale(1.02)';
+                formSection.style.boxShadow = '0 20px 60px rgba(249, 115, 22, 0.3)';
+                
+                setTimeout(() => {
+                    formSection.style.transform = 'scale(1)';
+                    formSection.style.boxShadow = '0 10px 40px rgba(0,0,0,0.1)';
+                }, 1000);
+            }
+        }
+
+        // Service selection and navigation function
+        function selectServiceAndNavigate(serviceType) {
+            // Navigate to services page
+            showPage('services');
+            
+            // Wait a bit for page to load, then select service
+            setTimeout(() => {
+                const serviceSelect = document.getElementById('serviceTypeSelect');
+                const quickSelect = document.getElementById('quickServiceSelect');
+                
+                if (serviceSelect) {
+                    serviceSelect.value = serviceType;
+                }
+                if (quickSelect) {
+                    quickSelect.value = serviceType;
+                }
+                
+                // Scroll to form
+                setTimeout(() => {
+                    const form = document.getElementById('serviceRequestForm');
+                    if (form) {
+                        form.scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        
+                        // Highlight the form briefly
+                        const formSection = document.querySelector('#servicesPage .form-section:last-child');
+                        if (formSection) {
+                            formSection.style.transform = 'scale(1.02)';
+                            formSection.style.boxShadow = '0 20px 60px rgba(249, 115, 22, 0.3)';
+                            
+                            setTimeout(() => {
+                                formSection.style.transform = 'scale(1)';
+                                formSection.style.boxShadow = '0 10px 40px rgba(0,0,0,0.1)';
+                            }, 1000);
+                        }
+                    }
+                }, 300);
+            }, 100);
+        }
+
+        // Form submissions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Service Request Form
+            const serviceRequestForm = document.getElementById('serviceRequestForm');
+            if (serviceRequestForm) {
+                serviceRequestForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const originalText = submitButton.textContent;
+                    
+                    // Show loading state
+                    submitButton.textContent = 'Gönderiliyor...';
+                    submitButton.disabled = true;
+                    this.classList.add('loading');
+                    
+                    try {
+                        const response = await fetch('https://formspree.io/f/xyzdonqr', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            showSuccess('Hizmet talebiniz başarıyla gönderildi! En kısa sürede uygun ustalar size ulaşacak.');
+                            this.reset();
+                        } else {
+                            throw new Error('Form gönderim hatası');
+                        }
+                    } catch (error) {
+                        showError('Form gönderilirken bir hata oluştu. Lütfen tekrar deneyin.');
+                    } finally {
+                        // Reset button state
+                        submitButton.textContent = originalText;
+                        submitButton.disabled = false;
+                        this.classList.remove('loading');
+                    }
+                });
+            }
+
+            // Contact Form
+            const contactForm = document.querySelector('#contactPage form');
+            if (contactForm) {
+                contactForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const originalText = submitButton.textContent;
+                    
+                    // Show loading state
+                    submitButton.textContent = 'Gönderiliyor...';
+                    submitButton.disabled = true;
+                    this.classList.add('loading');
+                    
+                    try {
+                        const response = await fetch('https://formspree.io/f/xyzdonqr', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            showSuccess('Mesajınız başarıyla gönderildi! En kısa sürede size dönüş yapacağız.');
+                            this.reset();
+                        } else {
+                            throw new Error('Form gönderim hatası');
+                        }
+                    } catch (error) {
+                        showError('Form gönderilirken bir hata oluştu. Lütfen tekrar deneyin.');
+                    } finally {
+                        // Reset button state
+                        submitButton.textContent = originalText;
+                        submitButton.disabled = false;
+                        this.classList.remove('loading');
+                    }
+                });
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'985b3ed0f71f5aaa',t:'MTc1ODk3ODY3MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
